@@ -1,55 +1,84 @@
 //contains routes for all of the promotions data 
 
 const express = require('express');
-const promotionsRouter = express.Router();
+const promotionRouter = express.Router();
+const Promotion = require('../models/promotion');
 
-promotionsRouter.route('/')  //drop the app word and path from parameter to chain all the routes together and remove semicolon at the end (unless last method on chain)
-.all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
+
+promotionRouter.route('/')  
+
+.get((req, res, next) => { //next function is an argument
+    Promotion.find() //static method that will query database for all docs using the campsite model
+    .then(promotions => { //access the results from .find()
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotions); //will send json data to client and close client
+    })
+    .catch(err => next(err)); //pass off error to overall handle error built into express
 })
-.get((req, res) => {
-    res.end('Will send all the promotions to you');
+.post((req, res, next) => {
+    Promotion.create(req.body) //create new campsite doc and save
+    .then(promotion => {
+        console.log('Promotion Created ', promotion);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion); //mongoose will check to make sure it the new doc the previously defined schema
+    })
+    .catch(err => next(err));
 })
-.post((req, res) => {
-    res.end(`Will add the promoter: ${req.body.name} with description: ${req.body.description}`);
-})
+
 .put((req, res) => {
     res.statusCode = 403;
     res.end('PUT operation not supported on /promotions');
 })
-.delete((req, res) => {
-    res.end('Deleting all promotions');
-}) //methods are chained together instead of 5 separate routes
+.delete((req, res, next) => {
+    Promotion.deleteMany() 
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
+}); 
 
-//campsiteID requests
-promotionsRouter.route('/:promotionId')  
-
-.all((req, res, next) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/plain');
-    next();
-})
-
-.get((req, res) => {
-    res.end(`Will send details of the promoter: ${req.params.promotionId} to you`);
+//partnerID requests
+promotionRouter.route('/:promotionId') 
+.get((req, res, next) => {
+    Promotion.findById(req.params.promotionId) //findById is a Mongoose method
+    .then(promotion => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion);
+    })
+    .catch(err => next(err));
 })
 
 .post((req, res) => {
     res.statusCode = 403;
     res.end(`POST operation not supported on /promotions/${req.params.promotionId}`);
 })
-
-.put((req, res) => {
-    res.write(`Updating the promoter: ${req.params.promotionId}\n`);
-    res.end(`Will update the promoter: ${req.body.name}
-        with description: ${req.body.description}`);
+.put((req, res, next) => {
+    Promotion.findByIdAndUpdate(req.params.promotionId, {
+        $set: req.body
+    }, { new: true })
+    .then(promotion => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion);
+    })
+    .catch(err => next(err));
 })
 
-.delete((req, res) => {
-    res.end(`Deleting promoter: ${req.params.promotionId}`);
+.delete((req, res, next) => {
+    Promotion.findByIdAndDelete(req.params.promotionId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
 
 
-module.exports = promotionsRouter; //export promotionsRouter to use in the server.js
+
+module.exports = promotionRouter;//export partnerRouter to use in the app.js
