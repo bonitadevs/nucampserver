@@ -18,7 +18,7 @@ promotionRouter.route('/')
     })
     .catch(err => next(err)); //pass off error to overall handle error built into express
 })
-.post(authenticate.verifyUser,(req, res, next) => {
+.post(authenticate.verifyUser,authenticate.verifyAdmin, (req, res, next) => {
     Promotion.create(req.body) //create new campsite doc and save
     .then(promotion => {
         console.log('Promotion Created ', promotion);
@@ -33,7 +33,7 @@ promotionRouter.route('/')
     res.statusCode = 403;
     res.end('PUT operation not supported on /promotions');
 })
-.delete(authenticate.verifyUser,(req, res, next) => {
+.delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     Promotion.deleteMany() 
     .then(response => {
         res.statusCode = 200;
@@ -45,7 +45,7 @@ promotionRouter.route('/')
 
 //partnerID requests
 promotionRouter.route('/:promotionId') 
-.get(authenticate.verifyUser,(req, res, next) => {
+.get((req, res, next) => {
     Promotion.findById(req.params.promotionId) //findById is a Mongoose method
     .then(promotion => {
         res.statusCode = 200;
@@ -55,11 +55,12 @@ promotionRouter.route('/:promotionId')
     .catch(err => next(err));
 })
 
-.post(authenticate.verifyUser,(req, res) => {
+.post((req, res) => {
     res.statusCode = 403;
     res.end(`POST operation not supported on /promotions/${req.params.promotionId}`);
 })
-.put(authenticate.verifyUser,(req, res, next) => {
+
+.put(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     Promotion.findByIdAndUpdate(req.params.promotionId, {
         $set: req.body
     }, { new: true })
@@ -71,7 +72,7 @@ promotionRouter.route('/:promotionId')
     .catch(err => next(err));
 })
 
-.delete(authenticate.verifyUser,(req, res, next) => {
+.delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     Promotion.findByIdAndDelete(req.params.promotionId)
     .then(response => {
         res.statusCode = 200;

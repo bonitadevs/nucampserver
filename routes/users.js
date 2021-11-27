@@ -2,37 +2,59 @@ const express = require('express');
 const User = require('../models/user');
 const passport = require('passport');
 const authenticate = require('../authenticate');
+const user = require('../models/user');
 
 
 
 const router = express.Router();
 
 /* GET users listing. */
-router.get('/', function(req, res, next) {
-    res.send('respond with a resource');
+router.get('/', authenticate.verifyUser, authenticate.verifyAdmin,(req, res, next) => {
+    User.find() 
+    .then(users => { //access the results from .find()
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(users); //will send json data to client and close client
+    })
+    .catch(err => next(err));
 }); 
 
 /* POST allow new users sign-up for system. */
 
 router.post('/signup', (req, res) => {
-  User.register(//callbacks to register a new user
-      new User({username: req.body.username}), //username suggested from client
-      req.body.password, //password suggested from client
-      err => {
-          if (err) {
-              res.statusCode = 500;
-              res.setHeader('Content-Type', 'application/json');
-              res.json({err: err});
-          } else {
-              passport.authenticate('local')(req, res, () => {
-                  res.statusCode = 200;
-                  res.setHeader('Content-Type', 'application/json');
-                  res.json({success: true, status: 'Registration Successful!'});
-              });
-          }
-      }
-  );
+    User.register(
+        new User({username: req.body.username}),
+        req.body.password,
+        (err, user) => {
+            if (err) {
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.json({err: err});
+            } else {
+                if (req.body.firstname) {
+                    user.firstname = req.body.firstname;
+                }
+                if (req.body.lastname) {
+                    user.lastname = req.body.lastname;
+                }
+                user.save(err => {
+                    if (err) {
+                        res.statusCode = 500;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.json({err: err});
+                        return;
+                    }
+                    passport.authenticate('local')(req, res, () => {
+                        res.statusCode = 200;
+                        res.setHeader('Content-Type', 'application/json');
+                        res.json({success: true, status: 'Registration Successful!'});
+                    });
+                });
+            }
+        }
+    );
 });
+
 
 //create the token 
 router.post('/login', passport.authenticate('local'), (req, res) => {
