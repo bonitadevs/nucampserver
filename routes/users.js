@@ -1,6 +1,8 @@
 const express = require('express');
 const User = require('../models/user');
 const passport = require('passport');
+const authenticate = require('../authenticate');
+
 
 
 const router = express.Router();
@@ -13,9 +15,9 @@ router.get('/', function(req, res, next) {
 /* POST allow new users sign-up for system. */
 
 router.post('/signup', (req, res) => {
-  User.register(
-      new User({username: req.body.username}),
-      req.body.password,
+  User.register(//callbacks to register a new user
+      new User({username: req.body.username}), //username suggested from client
+      req.body.password, //password suggested from client
       err => {
           if (err) {
               res.statusCode = 500;
@@ -32,10 +34,12 @@ router.post('/signup', (req, res) => {
   );
 });
 
+//create the token 
 router.post('/login', passport.authenticate('local'), (req, res) => {
+  const token = authenticate.getToken({_id: req.user._id}); //issue token to the user, pass in object that contains a payload
   res.statusCode = 200;
   res.setHeader('Content-Type', 'application/json');
-  res.json({success: true, status: 'You are successfully logged in!'});
+  res.json({success: true, token: token, status: 'You are successfully logged in!'});
 });
 
 router.get('/logout', (req, res, next) => { //logout to clear a cookie
